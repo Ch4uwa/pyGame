@@ -1,4 +1,5 @@
 import pygame
+import random
 pygame.init()
 
 
@@ -22,6 +23,7 @@ pygame.mixer.music.play(-1)
 
 
 class player:
+
     walkRight = [pygame.image.load('res/player/R1.png'),
                  pygame.image.load('res/player/R2.png'),
                  pygame.image.load('res/player/R3.png'),
@@ -43,6 +45,7 @@ class player:
                 pygame.image.load('res/player/L9.png')]
 
     def __init__(self, pos_x, pos_y, width, height):
+        self.name = "Berra"
         self.width = width
         self.height = height
         self.pos_x = pos_x
@@ -55,46 +58,67 @@ class player:
         self.jumpHight = 10
         self.standing = True
         self.hitbox = (self.pos_x + 17, self.pos_y + 11, 29, 52)
+        self.dead = False
+        self.health = 10
 
-    score = 0
-
-    def hit(self):
-        self.pos_x = 60
+    def resetPos(self):
+        self.pos_x = (0 + self.width / 2)
         self.pos_y = 410
         self.walkCount = 0
+
+    def hit(self):
         font1 = pygame.font.SysFont("arial", 50)
         text = font1.render("-5", 1, (255, 0, 0))
         window.blit(text, (250 - (text.get_width() / 2), 200))
         pygame.display.update()
-        i = 0
-        while i < 300:
-            pygame.time.delay(10)
-            i += 1
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    i = 301
-                    pygame.quit()
+        enemies[0].resetPos()
+        self.health -= 5
+        pygame.time.wait(500)
+
+        if self.health <= 0:
+            self.dead = True
+            self.text1 = font1.render("GAME OVER!", 1, (255, 0, 0))
+            window.blit(self.text1, ((screen_width / 2) -
+                                     (self.text1.get_width() / 2),
+                                     (screen_height / 2)))
+            pygame.display.update()
+            save("savedgame.txt")
+            pygame.time.wait(2000)
+            self.health = 10
+            self.resetPos()
+            self.walkCount = 0
+            self.dead = False
+            enemies[0].resetPos()
+            enemies[0].vel = 3
 
     def draw(self, window):
-        if self.walkCount + 1 >= 27:
-            self.walkCount = 0
+        if not self.dead:
+            if self.walkCount + 1 >= 27:
+                self.walkCount = 0
 
-        if not(self.standing):
-            if self.left:
-                window.blit(self.walkLeft[self.walkCount // 3],
-                            (self.pos_x, self.pos_y))
-                self.walkCount += 1
-            elif self.right:
-                window.blit(self.walkRight[self.walkCount // 3],
-                            (self.pos_x, self.pos_y))
-                self.walkCount += 1
-        else:
-            if self.right:
-                window.blit(self.walkRight[0], (self.pos_x, self.pos_y))
+            if not(self.standing):
+                if self.left:
+                    window.blit(self.walkLeft[self.walkCount // 3],
+                                (self.pos_x, self.pos_y))
+                    self.walkCount += 1
+                elif self.right:
+                    window.blit(self.walkRight[self.walkCount // 3],
+                                (self.pos_x, self.pos_y))
+                    self.walkCount += 1
             else:
-                window.blit(self.walkLeft[0], (self.pos_x, self.pos_y))
-        self.hitbox = (self.pos_x + 17, self.pos_y + 11, 29, 52)
-        # pygame.draw.rect(window, (255, 0, 0), self.hitbox, 2)
+                if self.right:
+                    window.blit(self.walkRight[0], (self.pos_x, self.pos_y))
+                else:
+                    window.blit(self.walkLeft[0], (self.pos_x, self.pos_y))
+
+            self.hitbox = (self.pos_x + 17, self.pos_y + 11, 29, 52)
+            pygame.draw.rect(window, (255, 0, 0), self.hitbox, 2)
+
+
+def save(filename):
+    with open(filename, 'w') as f:
+        f.write(p1.name + ";" + "Score" + str(enemies[0].deaths) +
+                ";" + "Enemy speed" + ";" + str(abs(enemies[0].vel)))
 
 
 class enemy:
@@ -122,11 +146,11 @@ class enemy:
                 pygame.image.load('res/enemy/L10E.png'),
                 pygame.image.load('res/enemy/L11E.png')]
 
-    def __init__(self, pos_x, pos_y, width, height, end):
+    def __init__(self, pos_x, pos_y, end):
         self.pos_x = pos_x
         self.pos_y = pos_y
-        self.width = width
-        self.height = height
+        self.width = 64
+        self.height = 64
         self.end = end
         self.path = [self.pos_x, self.end]
         self.walkCount = 0
@@ -134,6 +158,12 @@ class enemy:
         self.hitbox = (self.pos_x + 17, self.pos_y + 2, 31, 57)
         self.health = 10
         self.visible = True
+        self.deaths = 0
+
+    def resetPos(self):
+        self.pos_x = (screen_width - self.width / 2)
+        self.pos_y = 410
+        self.walkCount = 0
 
     def draw(self, window):
         self.move()
@@ -141,30 +171,36 @@ class enemy:
             if self.walkCount + 1 >= 33:
                 self.walkCount = 0
 
-        if self.vel > 0:
-            window.blit(self.walkRight[self.walkCount // 3],
-                        (self.pos_x, self.pos_y))
-            self.walkCount += 1
-        else:
-            window.blit(self.walkLeft[self.walkCount // 3],
-                        (self.pos_x, self.pos_y))
-            self.walkCount += 1
-        pygame.draw.rect(window, (255, 0, 0), (self.hitbox[0], self.hitbox[1] -
-                                               20, 50, 10))
-        pygame.draw.rect(window, (0, 128, 0), (self.hitbox[0], self.hitbox[1] -
-                                               20, 50 - (5 * (10 - self.health)), 10))
-        self.hitbox = (self.pos_x + 17, self.pos_y + 2, 31, 57)
-        # pygame.draw.rect(window, (255, 0, 0), self.hitbox, 2)
+            if self.vel > 0:
+                window.blit(self.walkRight[self.walkCount // 3],
+                            (self.pos_x, self.pos_y))
+                self.walkCount += 1
+            else:
+                window.blit(self.walkLeft[self.walkCount // 3],
+                            (self.pos_x, self.pos_y))
+                self.walkCount += 1
+
+            # Healthbar
+            pygame.draw.rect(window, (255, 0, 0),
+                             (self.hitbox[0], self.hitbox[1] -
+                              20, 50, 10))
+
+            pygame.draw.rect(window, (0, 128, 0),
+                             (self.hitbox[0], self.hitbox[1] -
+                              20, (5 * self.health), 10))
+
+            self.hitbox = (self.pos_x + 22, self.pos_y + 5, 31, 52)
+            pygame.draw.rect(window, (255, 0, 0), self.hitbox, 2)
 
     def move(self):
         if self.vel > 0:
-            if self.pos_x + self.vel < self.path[1]:
+            if self.pos_x + self.vel < self.path[0]:
                 self.pos_x += self.vel
             else:
                 self.vel = self.vel * -1
                 self.walkCount = 0
         else:
-            if self.pos_x - self.vel > self.path[0]:
+            if self.pos_x - self.vel > self.path[1]:
                 self.pos_x += self.vel
             else:
                 self.vel = self.vel * -1
@@ -172,11 +208,27 @@ class enemy:
 
     def hit(self):
         hitSound.play()
-        p1.score += 1
         if self.health > 0:
             self.health -= 1
-        else:
+        elif self.health <= 0:
             self.visible = False
+            self.pos_x = (screen_width - self.width / 2)
+            self.deaths += 1
+            p1.health += 1
+
+            i = 0
+            while i < 300:
+                pygame.time.wait(10)
+                i += 1
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        i = 301
+                        pygame.quit()
+
+            self.visible = True
+            self.health = 10
+            self.health += self.deaths
+            self.vel += self.deaths
 
 
 class projectile:
@@ -193,8 +245,9 @@ class projectile:
                            (self.pos_x, self.pos_y), self.radius)
 
 
-p1 = player(200, 410, 64, 64)
-e1 = enemy(100, 410, 64, 64, 450)
+p1 = player(0, 410, 64, 64)
+enemies = []
+enemies.append(enemy((screen_width - 64), 410, 0))
 shootLoop = 0
 run = True
 bullets = []
@@ -203,43 +256,52 @@ bullets = []
 def redrawGamewindowdow():
     window.blit(bg, (0, 0))
     p1.draw(window)
-    e1.draw(window)
-    text = font.render("P1 Score: " + str(p1.score), 1, (0, 0, 0))
-    window.blit(text, (10, 10))
+    for e in enemies:
+        e.draw(window)
+    time = font.render("Score: " + str(enemies[0].deaths),
+                       1, (0, 0, 0))
+    text = font.render("Health: " + str(p1.health), 1, (0, 0, 0))
+    window.blit(text, (5, 10))
+    text1 = font.render("Health: " + str(enemies[0].health), 1, (0, 0, 0))
+    window.blit(text1, ((screen_width - text1.get_width()), 10))
+    window.blit(time, ((screen_width/2) - (time.get_width() / 2), 10))
+
     for bullet in bullets:
         bullet.draw(window)
 
     pygame.display.update()
 
 
-while run:  # Mainloop
+# Mainloop
+while run:
     clock.tick(27)
-
-    if (p1.hitbox[1] < e1.hitbox[1] + e1.hitbox[3] and p1.hitbox[1] +
-            p1.hitbox[3] > e1.hitbox[1]):
-        if (p1.hitbox[0] + p1.hitbox[2] > e1.hitbox[0] and
-                p1.hitbox[0] < e1.hitbox[0] + e1.hitbox[2]):
+    # pygame.time.get_ticks()
+# Check collision if enemy touches player
+    if (p1.hitbox[1] < enemies[0].hitbox[1] + enemies[0].hitbox[3] and
+            p1.hitbox[1] + p1.hitbox[3] > enemies[0].hitbox[1]):
+        if (p1.hitbox[0] + p1.hitbox[2] > enemies[0].hitbox[0] and
+                p1.hitbox[0] < enemies[0].hitbox[0] + enemies[0].hitbox[2]):
             p1.hit()
-            p1.score -= 5
 
-    # control how fast you shoot
+# control how fast you shoot
     if shootLoop > 0:
         shootLoop += 1
-    if shootLoop > 3:
+    if shootLoop > 2:
         shootLoop = 0
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
 
+# Check for bullet collision on enemy
     for bullet in bullets:
-        if (bullet.pos_y - bullet.radius < e1.hitbox[1] + e1.hitbox[3] and
-                bullet.pos_y + bullet.radius > e1.hitbox[1]):
-            if (bullet.pos_x + bullet.radius > e1.hitbox[0] and
+        if (bullet.pos_y - bullet.radius < enemies[0].hitbox[1] + enemies[0].hitbox[3] and
+                bullet.pos_y + bullet.radius > enemies[0].hitbox[1]):
+            if (bullet.pos_x + bullet.radius > enemies[0].hitbox[0] and
                     bullet.pos_x - bullet.radius <
-                    e1.hitbox[0] + e1.hitbox[2]):
+                    enemies[0].hitbox[0] + enemies[0].hitbox[2]):
 
-                e1.hit()
+                enemies[0].hit()
                 bullets.pop(bullets.index(bullet))
 
         if bullet.pos_x < screen_width and bullet.pos_x > 0:
@@ -257,6 +319,7 @@ while run:  # Mainloop
             facing = 1
 
         if len(bullets) < 5:
+            shootLoop += 1
             bullets.append(projectile(
                 round(p1.pos_x + p1.width // 2),
                 round(p1.pos_y + p1.height // 2), 6, (0, 0, 0), facing))
