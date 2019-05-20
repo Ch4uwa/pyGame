@@ -295,7 +295,8 @@ while run:
 
 # Check for bullet collision on enemy
     for bullet in bullets:
-        if (bullet.pos_y - bullet.radius < enemies[0].hitbox[1] + enemies[0].hitbox[3] and
+        if (bullet.pos_y - bullet.radius < enemies[0].hitbox[1] +
+                enemies[0].hitbox[3] and
                 bullet.pos_y + bullet.radius > enemies[0].hitbox[1]):
             if (bullet.pos_x + bullet.radius > enemies[0].hitbox[0] and
                     bullet.pos_x - bullet.radius <
