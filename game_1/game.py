@@ -1,13 +1,15 @@
 import pygame
 import os
+from enemys.goblin import Goblin
 
 
 class Game:
     def __init__(self):
-        self.width = 500
-        self.height = 480
+        self.width = 1200
+        self.height = 600
         self.window = pygame.display.set_mode((self.width, self.height))
-        self.enemies = []
+        self.enemies = [Goblin()]
+        self.clicks = []
         self.bg = pygame.image.load(os.path.join('game_assets', 'bg.jpg'))
         self.bg = pygame.transform.scale(self.bg, (self.width, self.height))
 
@@ -20,10 +22,11 @@ class Game:
                 if event.type == pygame.QUIT:
                     run = False
 
-                mouse_pos = pygame.mouse.get_position()
+                mouse_pos = pygame.mouse.get_pos()
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    pass
+                    self.clicks.append(mouse_pos)
+                    print(mouse_pos)
 
             # Loop through enemies
             to_del = []
@@ -34,9 +37,20 @@ class Game:
             for d in to_del:
                 pass
 
+            self.draw()
+
         pygame.quit()
 
+    def draw(self):
+        self.window.blit(self.bg, (0, 0))
+        for p in self.clicks:
+            pygame.draw.circle(self.window, (255, 0, 0), (p[0], p[1]), 5, 0)
+        pygame.display.update()
 
+
+if __name__ == "__main__":
+    g = Game()
+    g.run()
 """
 def redrawGamewindowdow():
     window.blit(bg, (0, 0))
